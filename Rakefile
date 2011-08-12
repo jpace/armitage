@@ -3,8 +3,8 @@ require 'fileutils'
 
 task :default => :buildjrubyjar
 
-$fname    = "mackworth.rb"
-$clsname  = "MackworthTestMain.class"
+$fname    = "armitage.rb"
+$clsname  = "ArmitageTestMain.class"
 
 $builddir   = "build"
 
@@ -12,7 +12,7 @@ $metainfdir = "META-INF"
 $mfname     = $metainfdir + "/MANIFEST.MF"
 
 $jrubyjar   = "/home/jpace/Downloads/jruby-complete-1.6.3.jar"
-$tgtjar     = "mackworth.jar"
+$tgtjar     = "armitage.jar"
 
 def buildfile fname
   File.join($builddir, fname)

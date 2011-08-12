@@ -5,6 +5,11 @@ require 'csv'
 require 'set'
 require 'pathname'
 
+require 'rubygems'
+require 'riel'
+
+Log.level = Log::DEBUG
+
 include Java
 
 import java.awt.Color
@@ -21,9 +26,9 @@ import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.JPanel
 
-# Log.level = Log::DEBUG
+Log.level = Log::DEBUG
 
-$testing = false
+$testing = true
 $param_num = $testing ? 1 : 0   # 0 == actual; 1 == testing
 
 module SwingUtil
@@ -39,38 +44,7 @@ module SwingUtil
 end
 
 
-# returns erratic, but not completely random, numbers
-class ErraticNumberGenerator
-
-  def initialize(upperlimit, max_span)
-    @upperlimit = upperlimit
-    @max_span   = max_span
-    @previous   = @upperlimit / 2
-  end
-
-  def next
-    lonum = nil
-    hinum = nil
-
-    if @previous < @max_span
-      lonum = 0
-      hinum = @max_span * 1.1
-    elsif @previous + @max_span > @upperlimit
-      lonum = @upperlimit - @max_span * 1.1
-      hinum = @upperlimit
-    else
-      lonum = @previous - @max_span / 2
-      hinum = @previous + @max_span / 2
-    end
-
-    nextnum = (lonum + rand(hinum - lonum)).to_i
-    @previous = nextnum
-  end
-
-end
-
-
-class KeyList 
+class SpacebarKeyListener 
   include KeyListener
 
   attr_reader :keytime
@@ -105,7 +79,7 @@ end
 
 class ArmitageTestResultsFile 
 
-  CSV_HEADER_FIELDS = [ "userid", "duration", "answered", "is_long", "accurate" ]
+  CSV_HEADER_FIELDS = [ "userid", "duration", "answered", "is_correct", "accurate" ]
 
   CSV_FILE_NAME = 'armitage.csv'
 
@@ -146,29 +120,19 @@ module ArmitageTestConstants
 
   APP_NAME = "Armitage"
   
-  SHORT_LINE_LENGTH  = [84,     84][$param_num] # mm
-  LONG_LINE_FACTOR   = [1.15, 1.50][$param_num]
-  LONG_LINE_LENGTH   = (SHORT_LINE_LENGTH * LONG_LINE_FACTOR).to_i
-  LINE_RANDOM_LENGTH = 20
-
-  DISPLAY_DURATION   = [1000, 3000][$param_num] # ms
-  LINE_DURATION      = [300,  1000][$param_num] # ms
-  FLICKER_DURATION   = 40                       # ms
-  FLICKER_ITERATIONS = (LINE_DURATION.to_f / FLICKER_DURATION).to_i
+  DISPLAY_DURATION   = [1800, 1800][$param_num] # ms
+  INTERVAL_DURATION  = [700,   700][$param_num] # ms
   
   LINE_THICKNESS = 4
-  DISTANCE_BETWEEN_LINES = 25
 
-  LINE_COLOR = Color.new 50, 50, 50
+  FOREGROUND_COLOR = Color.new 50, 50, 50
 
   INTRO_DURATION = 5000         # ms
 
   # $$$ need confirmation about how many iterations to run here:
-  ITERATIONS_PER_TEST = [10, 4][$param_num]
+  OUTER_ITERATIONS_PER_TEST = [22, 6][$param_num]
+  INNER_ITERATIONS_PER_TEST = [6, 4][$param_num]
   
-  # % of iterations to show long lines:
-  LONGITERS   = ITERATIONS_PER_TEST * 0.25
-
   BACKGROUND_COLOR = Color.new 250, 250, 250
 
   BACKGROUND_COLOR_FLASH = Color.new 250, 0, 0
@@ -222,7 +186,7 @@ class LineDrawer
     g   = gdimary[0]
     dim = gdimary[1]
   
-    g.color = ArmitageTestConstants::LINE_COLOR
+    g.color = ArmitageTestConstants::FOREGROUND_COLOR
     
     len   = mm_to_pixels length_in_mm
     ctr_x = dim.width  / 2
@@ -248,32 +212,91 @@ class LineDrawer
 end
 
 
-class LineRenderer < LineDrawer
-  include ArmitageTestConstants
+class ConcreteWordSet
+  include Singleton
+
+  def initialize
+    # http://www.writing.com/main/view_item/item_id/1757079-Concrete-Nouns-List
+    @words = %w{ window chair table lamp desk pencil pen cow dog cat mouse }
+  end
+
+  def get_random
+    @words.rand
+  end
+
+end
+
+
+class EquationSet
+  include Singleton, Loggable
+
+  def initialize
+    @equations = Hash.new
+    correct_equations = Array.new
+
+    correct_equations << "4 + (9 / 3) = 7 yes"
+    correct_equations << "(4 x 2) - 6 = 2 yes"
+    correct_equations << "7 - (8 / 2) = 3 yes"
+    correct_equations << "(6 / 3) + 4 = 6 yes"
+    correct_equations << "(8 / 4) + 3 = 5 yes"
+    correct_equations << "(3 * 4) - 4 = 8 yes"
+    correct_equations << "(2 * 3) - 1 = 5 yes"
+    correct_equations << "(6 / 3) + 4 = 6 yes"
+
+    incorrect_equations = Array.new
+    incorrect_equations << "(9 / 3) - 1 = 4 no"
+    incorrect_equations << "4 + (2 * 2) = 6 no"
+    incorrect_equations << "4 - (3 / 1) = 3 no"
+    incorrect_equations << "6 + (8 / 4) = 10 no"
+    incorrect_equations << "(4 * 2) - 3 = 1 no"
+    incorrect_equations << "2 * (4 - 3) = 4 no"
+    incorrect_equations << "4 + (3 * 2) = 8 no"
+    incorrect_equations << "8 - (4 - 2) = 8 no"
+
+    correct_equations.each do |eqn|
+      @equations[eqn] = true
+    end
+
+    incorrect_equations.each do |eqn|
+      @equations[eqn] = false
+    end
+  end
+
+  def correct? eqn
+    info "equations[#{eqn}]: #{@equations[eqn]}".cyan
+    @equations[eqn]
+  end
+
+  def get_random
+    @equations.keys.rand
+  end
+end
+
+
+class EqnWordRenderer < LineDrawer
+  include ArmitageTestConstants, Loggable
 
   attr_accessor :length_in_mm
 
   def initialize test
     @test = test
-    @dist_from_y = mm_to_pixels(DISTANCE_BETWEEN_LINES) / 2
-    @eng = ErraticNumberGenerator.new(LINE_RANDOM_LENGTH, (LINE_RANDOM_LENGTH * 0.6).to_i)
+
+    @current_word = ConcreteWordSet.instance.get_random
+    @current_eqn  = EquationSet.instance.get_random
+
+    stack "@current_eqn: #{@current_eqn}".cyan
   end
 
-  def random_length base_len
-    base_len + @eng.next - LINE_RANDOM_LENGTH / 2
+  def correct?
+    EquationSet.instance.correct? @current_eqn
   end
 
   def render g, dim
-    return unless @test.show_lines
+    return unless @test.show
 
-    g.color = LINE_COLOR
-    
-    length_in_mm = @test.current_line_length_in_mm
-    ctr_y        = dim.height / 2
+    g.color = FOREGROUND_COLOR
 
-    [ -1, 1 ].each do |fact|
-      draw_centered_line [ g, dim ], ctr_y + (fact * @dist_from_y), random_length(length_in_mm)
-    end
+    draw_text g, dim, [ @current_word, @current_eqn ]
   end
 
 end
@@ -285,19 +308,15 @@ class IntroRenderer < LineDrawer
     @text = Array.new
     
     @text << "For each of the following screens,"
-    @text << "press the spacebar when you see the longer"
-    @text << "pair of lines."
+    @text << "press the spacebar when the calculation is correct."
     @text << ""
-    @text << "Below are the shorter and longer lines."
+    @text << "For example:"
+    @text << "window"
+    @text << "8 + (2 - 1) = 9"
   end
 
   def render g, dim
     draw_text g, dim, @text
-
-    ctr_y = dim.height / 2
-
-    draw_centered_line [ g, dim ], (ctr_y * 1.2).to_i, ArmitageTestConstants::SHORT_LINE_LENGTH
-    draw_centered_line [ g, dim ], (ctr_y * 1.4).to_i, ArmitageTestConstants::LONG_LINE_LENGTH
   end
 
 end
@@ -320,65 +339,62 @@ end
 
 
 class ArmitageTestRunner
+  include ArmitageTestConstants, Loggable
 
-  attr_reader :show_lines
-  attr_reader :current_line_length_in_mm
+  attr_reader :show
 
-  def initialize mainpanel, iterations
+  def initialize mainpanel, outer_iterations, inner_iterations
     @mainpanel = mainpanel
-    @iterations = iterations
+    @outer_iterations = outer_iterations
+    @inner_iterations = inner_iterations
 
-    longiters = iterations * 0.25
-
-    @key_timer = KeyList.new
+    @key_timer = SpacebarKeyListener.new
 
     @mainpanel.add_key_listener @key_timer
 
-    @show_lines = true
-    update_line_length false
-
-    @longindices = Set.new
-
-    while @longindices.size < longiters
-      @longindices << rand(iterations)
-    end
-
-    puts "@longindices: #{@longindices.inspect}"
+    @show = true
 
     @responses = Array.new
 
     java.lang.Thread.new(self).start
   end
 
-  def update_line_length is_long_len
-    @current_line_length_in_mm = is_long_len ? ArmitageTestConstants::LONG_LINE_LENGTH : ArmitageTestConstants::SHORT_LINE_LENGTH
-  end
-
   def repaint
     @mainpanel.repaint
   end
 
-  def run_iteration num
-    is_long = @longindices.include?(num)
+  def run_outer_iteration num
+    ok = JOptionPane.show_confirm_dialog @mainpanel, "Now type the word", "Type!", JOptionPane::YES_NO_OPTION
 
-    update_line_length is_long
-    
-    starttime = Time.now
-    # puts "starting: #{starttime.to_f}"
-    @key_timer.clear
-    
-    # puts "num: #{num}"
-
-    @show_lines = true
-
-    ArmitageTestConstants::FLICKER_ITERATIONS.times do
-      repaint
-      java.lang.Thread.sleep(ArmitageTestConstants::FLICKER_DURATION)
+    @inner_iterations.times do |iidx|
+      info "iidx: #{iidx}"
+      
+      run_inner_iteration iidx
     end
 
-    @show_lines = false
     
-    # puts "pausing: #{Time.new.to_f}"
+  end
+
+  def run_inner_iteration num
+    info "num: #{num}"
+    ewr = EqnWordRenderer.new self
+
+    starttime = Time.now
+    info "starting: #{starttime.to_f}"
+    @key_timer.clear
+    
+    info "num: #{num}"
+
+    @show = true
+
+    @mainpanel.renderer = ewr
+
+    repaint
+    java.lang.Thread.sleep DISPLAY_DURATION
+
+    @show = false
+    
+    info "pausing: #{Time.new.to_f}"
 
     repaint
 
@@ -388,14 +404,9 @@ class ArmitageTestRunner
     
     sleep_duration = (ArmitageTestConstants::DISPLAY_DURATION - duration).to_i
 
-    # puts "sleep_duration: #{sleep_duration}"
+    java.lang.Thread.sleep INTERVAL_DURATION
 
-    if sleep_duration > 0
-      java.lang.Thread.sleep sleep_duration
-      # puts "done sleeping"
-    end
-
-    # puts "@key_timer: #{@key_timer}"
+    info "@key_timer: #{@key_timer}"
 
     # get it here, so subsequent calls don't let one "leak" in
     keytime = @key_timer.keytime
@@ -404,9 +415,12 @@ class ArmitageTestRunner
 
     response_time = answered ? keytime.to_f - starttime.to_f : -1.0
 
-    # puts "response_time: #{response_time}"
+    info "response_time: #{response_time}"
+    info "answered: #{answered}"
+    info "ewr.correct?: #{ewr.correct?}"
 
-    is_correct = answered == is_long
+    is_correct = answered == ewr.correct?
+    info "is_correct: #{is_correct}".red
 
     if !is_correct
       @mainpanel.background_color = ArmitageTestConstants::BACKGROUND_COLOR_FLASH
@@ -420,7 +434,7 @@ class ArmitageTestRunner
       repaint      
     end
 
-    response = [ @user_id, response_time, answered, is_long, is_correct ]
+    response = [ @user_id, response_time, answered, ewr.correct?, is_correct ]
 
     puts "response: #{response.inspect}"
     
@@ -430,14 +444,12 @@ class ArmitageTestRunner
   end
 
   def run_test
-    @show_lines = false
-
-    @mainpanel.renderer = LineRenderer.new self
+    @show = false
 
     java.lang.Thread.sleep 1000
 
-    @iterations.times do |num|
-      run_iteration num
+    @outer_iterations.times do |num|
+      run_outer_iteration num
     end
   end
 
@@ -462,7 +474,7 @@ end
 class ArmitageTest < ArmitageTestRunner
 
   def initialize mainpanel
-    super(mainpanel, ArmitageTestConstants::ITERATIONS_PER_TEST)
+    super(mainpanel, ArmitageTestConstants::OUTER_ITERATIONS_PER_TEST, ArmitageTestConstants::INNER_ITERATIONS_PER_TEST)
   end
 
   def write_responses
@@ -484,7 +496,7 @@ end
 class ArmitageTestDemo < ArmitageTestRunner
 
   def initialize mainpanel
-    super(mainpanel, 4)
+    super(mainpanel, 1, 3)
   end
 
 end
