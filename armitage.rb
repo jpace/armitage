@@ -130,13 +130,14 @@ module ArmitageTestConstants
   INTRO_DURATION = 5000         # ms
 
   # $$$ need confirmation about how many iterations to run here:
-  OUTER_ITERATIONS_PER_TEST = [22, 6][$param_num]
+  OUTER_ITERATIONS_PER_TEST = [22, 4][$param_num]
   INNER_ITERATIONS_PER_TEST = [6, 4][$param_num]
+
+  INPUT_DURATION = [21000, 4000][$param_num] # ms
   
   BACKGROUND_COLOR = Color.new 250, 250, 250
 
   BACKGROUND_COLOR_FLASH = Color.new 250, 0, 0
-
 end
 
 
@@ -344,85 +345,74 @@ class InputDialog
   def initialize parent, message, title
     # from javax.swing.JOptionPane
     
-    pane = JOptionPane.new(message, JOptionPane::PLAIN_MESSAGE, JOptionPane::OK_CANCEL_OPTION)
-    info "pane: #{pane}"
+    @pane = JOptionPane.new(message, JOptionPane::PLAIN_MESSAGE, JOptionPane::OK_CANCEL_OPTION)
+    info "@pane: #{@pane}"
 
-    pane.setWantsInput(true)
-    pane.setSelectionValues(nil)
-    pane.setInitialSelectionValue(nil)
-    pane.setComponentOrientation(parent.getComponentOrientation())
+    @pane.setWantsInput(true)
+    @pane.setSelectionValues(nil)
+    @pane.setInitialSelectionValue(nil)
+    @pane.setComponentOrientation(parent.getComponentOrientation())
 
-    dialog = pane.createDialog(parent, title, javax.swing.JRootPane::PLAIN_DIALOG)
+    @dialog = @pane.createDialog(parent, title, javax.swing.JRootPane::PLAIN_DIALOG)
                                
-    pane.selectInitialValue()
-    dialog.show
-    dialog.dispose
+    @pane.selectInitialValue()
+  end
 
-    value = pane.getInputValue()
+  def show
+    @dialog.show
+  end
+
+  def dispose
+    @dialog.dispose
+  end
+
+  def value
+    value = @pane.getInputValue()
 
     info "value: #{value}"
+
+    value
   end
 end
 
 class WordEntryDialog
-  include Loggable
+  include Loggable, ArmitageTestConstants
+
+  attr_reader :value
 
   def initialize panel
-    @window = find_window panel
+    @indlg = nil
+    @value = nil
 
-    # java.lang.Thread.new(self).start
+    java.lang.Thread.new(self).start
     info "running!".yellow
 
-    InputDialog.new panel, "type the word", "type!"
+    @indlg = InputDialog.new panel, "First character of each word:", "Enter"
+    @indlg.show
 
-    # ok = JOptionPane.show_input_dialog panel, "Now type the word", "Type!", JOptionPane::PLAIN_MESSAGE
+    info "@indlg: #{@indlg}".yellow
 
     info "done running".yellow
-  end
-
-  def find_window comp
-    while comp
-      cls = comp.getClass()
-      while cls
-        if cls.getName() == "java.awt.Window"
-          return comp
-        else
-          cls = cls.getSuperclass()
-        end
-      end
-      comp = comp.getParent()
+    if @indlg
+      @value = @indlg.value
+      @indlg.dispose
     end
-    nil
   end
 
   def run
     info "sleeping ..."
 
-    dlg = nil
-
-    until dlg
-      windows = @window.getOwnedWindows()
-      info "windows: #{windows}"
-
-      windows.each do |w|
-        info "w: #{w}".blue
-      end
-      
-      windows.each do |w|
-        info "w: #{w}"
-        if w.getClass().getName() == "javax.swing.JDialog"
-          info "w: #{w}".green
-          dlg = w
-        end
-      end
+    until @indlg
+      java.lang.Thread.sleep 100
     end
 
-    info "dlg: #{dlg}"
+    info "@indlg: #{@indlg}"
 
-    java.lang.Thread.sleep 2000
+    java.lang.Thread.sleep INPUT_DURATION
     info "done sleeping"
 
-    dlg.dispose
+    @indlg.dispose
+    @indlg = nil
   end
 end
 
@@ -460,10 +450,11 @@ class ArmitageTestRunner
         run_inner_iteration iidx
       end    
     end
-    # give them x seconds
 
-    WordEntryDialog.new @mainpanel
-
+    wed = WordEntryDialog.new @mainpanel
+    @inchars = wed.value
+    puts "@inchars: #{@inchars}"
+    
   end
 
   def run_inner_iteration num
