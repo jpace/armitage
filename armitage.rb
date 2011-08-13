@@ -338,6 +338,95 @@ class OutroRenderer < LineDrawer
 end
 
 
+class InputDialog
+  include Loggable
+
+  def initialize parent, message, title
+    # from javax.swing.JOptionPane
+    
+    pane = JOptionPane.new(message, JOptionPane::PLAIN_MESSAGE, JOptionPane::OK_CANCEL_OPTION)
+    info "pane: #{pane}"
+
+    pane.setWantsInput(true)
+    pane.setSelectionValues(nil)
+    pane.setInitialSelectionValue(nil)
+    pane.setComponentOrientation(parent.getComponentOrientation())
+
+    dialog = pane.createDialog(parent, title, javax.swing.JRootPane::PLAIN_DIALOG)
+                               
+    pane.selectInitialValue()
+    dialog.show
+    dialog.dispose
+
+    value = pane.getInputValue()
+
+    info "value: #{value}"
+  end
+end
+
+class WordEntryDialog
+  include Loggable
+
+  def initialize panel
+    @window = find_window panel
+
+    # java.lang.Thread.new(self).start
+    info "running!".yellow
+
+    InputDialog.new panel, "type the word", "type!"
+
+    # ok = JOptionPane.show_input_dialog panel, "Now type the word", "Type!", JOptionPane::PLAIN_MESSAGE
+
+    info "done running".yellow
+  end
+
+  def find_window comp
+    while comp
+      cls = comp.getClass()
+      while cls
+        if cls.getName() == "java.awt.Window"
+          return comp
+        else
+          cls = cls.getSuperclass()
+        end
+      end
+      comp = comp.getParent()
+    end
+    nil
+  end
+
+  def run
+    info "sleeping ..."
+
+    dlg = nil
+
+    until dlg
+      windows = @window.getOwnedWindows()
+      info "windows: #{windows}"
+
+      windows.each do |w|
+        info "w: #{w}".blue
+      end
+      
+      windows.each do |w|
+        info "w: #{w}"
+        if w.getClass().getName() == "javax.swing.JDialog"
+          info "w: #{w}".green
+          dlg = w
+        end
+      end
+    end
+
+    info "dlg: #{dlg}"
+
+    java.lang.Thread.sleep 2000
+    info "done sleeping"
+
+    dlg.dispose
+  end
+end
+
+
 class ArmitageTestRunner
   include ArmitageTestConstants, Loggable
 
@@ -364,15 +453,17 @@ class ArmitageTestRunner
   end
 
   def run_outer_iteration num
-    ok = JOptionPane.show_confirm_dialog @mainpanel, "Now type the word", "Type!", JOptionPane::YES_NO_OPTION
-
-    @inner_iterations.times do |iidx|
-      info "iidx: #{iidx}"
-      
-      run_inner_iteration iidx
+    if false
+      @inner_iterations.times do |iidx|
+        info "iidx: #{iidx}"
+        
+        run_inner_iteration iidx
+      end    
     end
+    # give them x seconds
 
-    
+    WordEntryDialog.new @mainpanel
+
   end
 
   def run_inner_iteration num
