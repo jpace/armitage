@@ -4,11 +4,7 @@
 require 'csv'
 require 'set'
 require 'pathname'
-
-require 'rubygems'
-require 'riel'
-
-Log.level = Log::DEBUG
+require 'singleton'
 
 include Java
 
@@ -26,10 +22,15 @@ import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.JPanel
 
-Log.level = Log::DEBUG
-
 $testing = true
 $param_num = $testing ? 1 : 0   # 0 == actual; 1 == testing
+
+class Array
+
+  def rand
+    self[Kernel::rand(size)]
+  end
+end
 
 module SwingUtil
 
@@ -217,8 +218,373 @@ class ConcreteWordSet
   include Singleton
 
   def initialize
-    # http://www.writing.com/main/view_item/item_id/1757079-Concrete-Nouns-List
-    @words = %w{ window chair table lamp desk pencil pen cow dog cat mouse }
+    @words = Array.new
+    # DATA doesn't seem to work in JRuby -- it produces the source for Set
+    @words << "adder"
+    @words << "albatross"
+    @words << "alcohol"
+    @words << "alligator"
+    @words << "aluminium"
+    @words << "ankle"
+    @words << "ant"
+    @words << "ape"
+    @words << "apple"
+    @words << "apricot"
+    @words << "asparagus"
+    @words << "automobile"
+    @words << "axe"
+    @words << "bag"
+    @words << "bagpipe"
+    @words << "ball"
+    @words << "balloon"
+    @words << "banana"
+    @words << "bandage"
+    @words << "barn"
+    @words << "basin"
+    @words << "basket"
+    @words << "bath"
+    @words << "bayonet"
+    @words << "beach"
+    @words << "bean"
+    @words << "bed"
+    @words << "bedroom"
+    @words << "beef"
+    @words << "beet"
+    @words << "beetle"
+    @words << "bell"
+    @words << "belly"
+    @words << "belt"
+    @words << "bench"
+    @words << "birch"
+    @words << "bird"
+    @words << "blanket"
+    @words << "blood"
+    @words << "blouse"
+    @words << "bluebell"
+    @words << "boat"
+    @words << "book"
+    @words << "boy"
+    @words << "bra"
+    @words << "bracelet"
+    @words << "bread"
+    @words << "brick"
+    @words << "bridge"
+    @words << "brook"
+    @words << "broom"
+    @words << "bulldog"
+    @words << "butter"
+    @words << "button"
+    @words << "cabbage"
+    @words << "cake"
+    @words << "camera"
+    @words << "cancer"
+    @words << "candy"
+    @words << "cannon"
+    @words << "canoe"
+    @words << "car"
+    @words << "cardinal"
+    @words << "carnation"
+    @words << "carp"
+    @words << "carrot"
+    @words << "casket"
+    @words << "cat"
+    @words << "catfish"
+    @words << "cattle"
+    @words << "cauliflower"
+    @words << "cedar"
+    @words << "ceiling"
+    @words << "cement"
+    @words << "cereal"
+    @words << "chair"
+    @words << "chalk"
+    @words << "cherry"
+    @words << "chestnut"
+    @words << "chicken"
+    @words << "chipmunk"
+    @words << "cider"
+    @words << "cigarette"
+    @words << "clarinet"
+    @words << "clay"
+    @words << "clown"
+    @words << "coat"
+    @words << "cock"
+    @words << "coffee"
+    @words << "collar"
+    @words << "cork"
+    @words << "cotton"
+    @words << "cow"
+    @words << "crab"
+    @words << "crane"
+    @words << "cream"
+    @words << "cucumber"
+    @words << "curler"
+    @words << "dad"
+    @words << "daisy"
+    @words << "dart"
+    @words << "deer"
+    @words << "dentist"
+    @words << "diamond"
+    @words << "dog"
+    @words << "door"
+    @words << "dough"
+    @words << "drum"
+    @words << "duck"
+    @words << "eagle"
+    @words << "ear"
+    @words << "earthworm"
+    @words << "eel"
+    @words << "egg"
+    @words << "elbow"
+    @words << "elephant"
+    @words << "emerald"
+    @words << "eye"
+    @words << "farmyard"
+    @words << "feet"
+    @words << "film"
+    @words << "firewood"
+    @words << "flag"
+    @words << "flea"
+    @words << "forearm"
+    @words << "forest"
+    @words << "fox"
+    @words << "frog"
+    @words << "frost"
+    @words << "fruit"
+    @words << "fudge"
+    @words << "fur"
+    @words << "furnace"
+    @words << "garlic"
+    @words << "gin"
+    @words << "gingerbread"
+    @words << "girl"
+    @words << "glass"
+    @words << "glove"
+    @words << "goat"
+    @words << "gondola"
+    @words << "gorilla"
+    @words << "grape"
+    @words << "grasshopper"
+    @words << "gravy"
+    @words << "gun"
+    @words << "haddock"
+    @words << "hammer"
+    @words << "hand"
+    @words << "handkerchief"
+    @words << "harbour"
+    @words << "hare"
+    @words << "harpsichord"
+    @words << "hat"
+    @words << "hatchet"
+    @words << "hawk"
+    @words << "hay"
+    @words << "head"
+    @words << "heart"
+    @words << "hedge"
+    @words << "helmet"
+    @words << "hen"
+    @words << "heroin"
+    @words << "herring"
+    @words << "honey"
+    @words << "horn"
+    @words << "horse"
+    @words << "house"
+    @words << "ice"
+    @words << "indian"
+    @words << "ink"
+    @words << "jacket"
+    @words << "jaw"
+    @words << "jeep"
+    @words << "jersey"
+    @words << "kennel"
+    @words << "kettle"
+    @words << "key"
+    @words << "kilt"
+    @words << "kitten"
+    @words << "knife"
+    @words << "lamb"
+    @words << "lamp"
+    @words << "land"
+    @words << "lantern"
+    @words << "larch"
+    @words << "leek"
+    @words << "leg"
+    @words << "lemon"
+    @words << "lemonade"
+    @words << "lily"
+    @words << "limousine"
+    @words << "lion"
+    @words << "liquor"
+    @words << "liver"
+    @words << "macaroni"
+    @words << "mackerel"
+    @words << "mallet"
+    @words << "man"
+    @words << "manure"
+    @words << "marble"
+    @words << "mattress"
+    @words << "meal"
+    @words << "milk"
+    @words << "minnow"
+    @words << "mirror"
+    @words << "moccasin"
+    @words << "monocle"
+    @words << "moose"
+    @words << "mountain"
+    @words << "mouse"
+    @words << "mouthpiece"
+    @words << "mud"
+    @words << "mussel"
+    @words << "necklace"
+    @words << "needle"
+    @words << "newt"
+    @words << "nightgown"
+    @words << "nightingale"
+    @words << "nose"
+    @words << "olive"
+    @words << "onion"
+    @words << "orange"
+    @words << "ornament"
+    @words << "otter"
+    @words << "overcoat"
+    @words << "owl"
+    @words << "ox"
+    @words << "pants"
+    @words << "pea"
+    @words << "peach"
+    @words << "pear"
+    @words << "pedal"
+    @words << "pencil"
+    @words << "penny"
+    @words << "phone"
+    @words << "piano"
+    @words << "pickle"
+    @words << "pie"
+    @words << "pig"
+    @words << "pigeon"
+    @words << "pill"
+    @words << "pillow"
+    @words << "pin"
+    @words << "pineapple"
+    @words << "pipe"
+    @words << "pliers"
+    @words << "plum"
+    @words << "pond"
+    @words << "pony"
+    @words << "potato"
+    @words << "prune"
+    @words << "puddle"
+    @words << "puppy"
+    @words << "pyramid"
+    @words << "quail"
+    @words << "quilt"
+    @words << "rabbit"
+    @words << "radio"
+    @words << "rain"
+    @words << "rat"
+    @words << "ribbon"
+    @words << "rice"
+    @words << "rifle"
+    @words << "robin"
+    @words << "rock"
+    @words << "rocket"
+    @words << "rope"
+    @words << "rose"
+    @words << "rug"
+    @words << "rum"
+    @words << "rye"
+    @words << "saddle"
+    @words << "sandal"
+    @words << "sardine"
+    @words << "saucer"
+    @words << "sauerkraut"
+    @words << "saxophone"
+    @words << "seed"
+    @words << "shark"
+    @words << "shawl"
+    @words << "shed"
+    @words << "sheep"
+    @words << "sheepskin"
+    @words << "sheet"
+    @words << "ship"
+    @words << "shirt"
+    @words << "shoe"
+    @words << "shrimp"
+    @words << "skin"
+    @words << "skirt"
+    @words << "skunk"
+    @words << "skylark"
+    @words << "skyscraper"
+    @words << "sleigh"
+    @words << "snake"
+    @words << "snow"
+    @words << "soda"
+    @words << "sofa"
+    @words << "soup"
+    @words << "sparrow"
+    @words << "spider"
+    @words << "spoon"
+    @words << "squirrel"
+    @words << "statue"
+    @words << "steak"
+    @words << "stew"
+    @words << "stick"
+    @words << "stoat"
+    @words << "stomach"
+    @words << "stone"
+    @words << "stork"
+    @words << "straw"
+    @words << "strawberry"
+    @words << "sugar"
+    @words << "sun"
+    @words << "sycamore"
+    @words << "table"
+    @words << "tail"
+    @words << "tangerine"
+    @words << "tea"
+    @words << "teeth"
+    @words << "telephone"
+    @words << "tent"
+    @words << "thermometer"
+    @words << "thistle"
+    @words << "thread"
+    @words << "thumb"
+    @words << "tiger"
+    @words << "tobacco"
+    @words << "toe"
+    @words << "tomato"
+    @words << "tongue"
+    @words << "tooth"
+    @words << "tornado"
+    @words << "tortoise"
+    @words << "trapeze"
+    @words << "tree"
+    @words << "trombone"
+    @words << "trout"
+    @words << "trumpet"
+    @words << "tulip"
+    @words << "turpentine"
+    @words << "turtle"
+    @words << "typewriter"
+    @words << "umbrella"
+    @words << "van"
+    @words << "vegetable"
+    @words << "vine"
+    @words << "vinegar"
+    @words << "violin"
+    @words << "walnut"
+    @words << "walrus"
+    @words << "water"
+    @words << "weed"
+    @words << "whale"
+    @words << "whiskey"
+    @words << "wig"
+    @words << "window"
+    @words << "wine"
+    @words << "wood"
+    @words << "wool"
+    @words << "worm"
+    @words << "wren"
+    @words << "yacht"
   end
 
   def get_random
@@ -228,43 +594,124 @@ class ConcreteWordSet
 end
 
 
-class EquationSet
-  include Singleton, Loggable
+class Equation
+  attr_reader :formula, :result
 
-  def initialize
-    @equations = Hash.new
-    correct_equations = Array.new
+  def initialize(formula, result = nil)
+    @formula = formula.to_s
+    @result  = result || @formula.to_i
+  end
 
-    correct_equations << "4 + (9 / 3) = 7 yes"
-    correct_equations << "(4 x 2) - 6 = 2 yes"
-    correct_equations << "7 - (8 / 2) = 3 yes"
-    correct_equations << "(6 / 3) + 4 = 6 yes"
-    correct_equations << "(8 / 4) + 3 = 5 yes"
-    correct_equations << "(3 * 4) - 4 = 8 yes"
-    correct_equations << "(2 * 3) - 1 = 5 yes"
-    correct_equations << "(6 / 3) + 4 = 6 yes"
+  java_signature 'String toString()'
+  def to_s
+    "#{@formula} => #{@result}"
+  end
+end
 
-    incorrect_equations = Array.new
-    incorrect_equations << "(9 / 3) - 1 = 4 no"
-    incorrect_equations << "4 + (2 * 2) = 6 no"
-    incorrect_equations << "4 - (3 / 1) = 3 no"
-    incorrect_equations << "6 + (8 / 4) = 10 no"
-    incorrect_equations << "(4 * 2) - 3 = 1 no"
-    incorrect_equations << "2 * (4 - 3) = 4 no"
-    incorrect_equations << "4 + (3 * 2) = 8 no"
-    incorrect_equations << "8 - (4 - 2) = 8 no"
-
-    correct_equations.each do |eqn|
-      @equations[eqn] = true
-    end
-
-    incorrect_equations.each do |eqn|
-      @equations[eqn] = false
+class EquationGenerator
+  include Singleton
+  
+  def factors num
+    if num == 1
+      []
+    else
+      sq = Math.sqrt(num).floor
+      possibles = [ 2 ] + (3 ..sq).step(2).collect { |n| n }
+      possibles.each do |n|
+        if num % n == 0
+          return [ n ] + factors(num / n)
+        end
+      end
+      [ num ]
     end
   end
 
-  def correct? eqn
-    info "equations[#{eqn}]: #{@equations[eqn]}".cyan
+  def exec_rand *blocks
+    bidx = rand(blocks.size)
+    blk  = blocks[bidx]
+    blk.call
+  end
+
+  def create_formula(lo, hi)
+    mult_gen = Proc.new do
+      result = rand_bounded(lo, hi)
+      facs   = factors result
+      lhs    = facs.rand
+      rhs    = result / lhs
+      
+      Equation.new "#{lhs} * #{rhs}", lhs * rhs
+    end
+
+    div_gen = Proc.new do
+      lhs  = rand_bounded(lo, hi)
+      facs = factors lhs
+      while facs.size == 1
+        lhs  = rand_bounded(lo, hi)
+        facs = factors lhs
+      end
+
+      rhs = facs.rand
+      Equation.new "#{lhs} / #{rhs}", lhs / rhs
+    end
+
+    exec_rand mult_gen, div_gen
+  end
+
+  def rand_bounded(min, max)
+    min + rand(max - min)
+  end
+
+  def next
+    num_plus_formula = Proc.new do
+      lnum  = rand_bounded(2, 5)
+      rform = create_formula(2, 12)
+      Equation.new "#{lnum} + (#{rform.formula})", lnum + rform.result
+    end
+    
+    num_minus_formula = Proc.new do
+      lnum = rand_bounded(5, 13)
+      rform = create_formula(2, lnum)
+      Equation.new "#{lnum} - (#{rform.formula})", lnum - rform.result
+    end
+
+    formula_plus_num = Proc.new do
+      lform = create_formula(2, 12)
+      rnum = rand_bounded(2, 5)
+      Equation.new "(#{lform.formula}) + #{rnum}", lform.result + rnum
+    end
+    
+    formula_minus_num = Proc.new do
+      lform = create_formula(5, 12)
+      rnum = rand_bounded(1, lform.result + 1)
+      Equation.new "(#{lform.formula}) - #{rnum}", lform.result - rnum
+    end
+    
+    exec_rand num_plus_formula, num_minus_formula, formula_plus_num, formula_minus_num
+  end
+end
+
+
+class EquationSet
+  include Singleton
+
+  def initialize
+    @equations = Hash.new
+
+    eg = EquationGenerator.instance
+
+    10.times do
+      eqn = eg.next
+      @equations[eqn] = true
+    end
+
+    10.times do
+      eqn = eg.next
+      badeqn = Equation.new eqn.formula, eqn.result + (rand(2) == 0 ? 1 : -1) * (1 + rand(3))
+      @equations[badeqn] = false
+    end
+  end
+
+  def is_correct eqn
     @equations[eqn]
   end
 
@@ -275,7 +722,7 @@ end
 
 
 class EqnWordRenderer < LineDrawer
-  include ArmitageTestConstants, Loggable
+  include ArmitageTestConstants
 
   attr_accessor :length_in_mm
 
@@ -284,12 +731,10 @@ class EqnWordRenderer < LineDrawer
 
     @current_word = ConcreteWordSet.instance.get_random
     @current_eqn  = EquationSet.instance.get_random
-
-    stack "@current_eqn: #{@current_eqn}".cyan
   end
 
-  def correct?
-    EquationSet.instance.correct? @current_eqn
+  def is_correct
+    EquationSet.instance.is_correct @current_eqn
   end
 
   def render g, dim
@@ -297,7 +742,7 @@ class EqnWordRenderer < LineDrawer
 
     g.color = FOREGROUND_COLOR
 
-    draw_text g, dim, [ @current_word, @current_eqn ]
+    draw_text g, dim, [ @current_word, @current_eqn.formula + " = " + @current_eqn.result.to_s ]
   end
 
 end
@@ -340,22 +785,20 @@ end
 
 
 class InputDialog
-  include Loggable
 
   def initialize parent, message, title
     # from javax.swing.JOptionPane
     
     @pane = JOptionPane.new(message, JOptionPane::PLAIN_MESSAGE, JOptionPane::OK_CANCEL_OPTION)
-    info "@pane: #{@pane}"
 
-    @pane.setWantsInput(true)
-    @pane.setSelectionValues(nil)
-    @pane.setInitialSelectionValue(nil)
-    @pane.setComponentOrientation(parent.getComponentOrientation())
+    @pane.wants_input = true
+    @pane.selection_values = nil
+    @pane.initial_selection_value = nil
+    @pane.component_orientation = parent.component_orientation
 
-    @dialog = @pane.createDialog(parent, title, javax.swing.JRootPane::PLAIN_DIALOG)
+    @dialog = @pane.create_dialog(parent, title, javax.swing.JRootPane::PLAIN_DIALOG)
                                
-    @pane.selectInitialValue()
+    @pane.select_initial_value
   end
 
   def show
@@ -367,16 +810,12 @@ class InputDialog
   end
 
   def value
-    value = @pane.getInputValue()
-
-    info "value: #{value}"
-
-    value
+    @pane.input_value
   end
 end
 
 class WordEntryDialog
-  include Loggable, ArmitageTestConstants
+  include ArmitageTestConstants
 
   attr_reader :value
 
@@ -385,14 +824,12 @@ class WordEntryDialog
     @value = nil
 
     java.lang.Thread.new(self).start
-    info "running!".yellow
 
-    @indlg = InputDialog.new panel, "First character of each word:", "Enter"
+    first_char = rand(2) == 0
+
+    @indlg = InputDialog.new panel, "Enter the " + (first_char ? "first" : "last") + " character of each word:", "Query"
     @indlg.show
 
-    info "@indlg: #{@indlg}".yellow
-
-    info "done running".yellow
     if @indlg
       @value = @indlg.value
       @indlg.dispose
@@ -400,16 +837,11 @@ class WordEntryDialog
   end
 
   def run
-    info "sleeping ..."
-
     until @indlg
       java.lang.Thread.sleep 100
     end
 
-    info "@indlg: #{@indlg}"
-
     java.lang.Thread.sleep INPUT_DURATION
-    info "done sleeping"
 
     @indlg.dispose
     @indlg = nil
@@ -418,7 +850,7 @@ end
 
 
 class ArmitageTestRunner
-  include ArmitageTestConstants, Loggable
+  include ArmitageTestConstants
 
   attr_reader :show
 
@@ -443,30 +875,20 @@ class ArmitageTestRunner
   end
 
   def run_outer_iteration num
-    if false
-      @inner_iterations.times do |iidx|
-        info "iidx: #{iidx}"
-        
-        run_inner_iteration iidx
-      end    
+    @inner_iterations.times do |iidx|
+      run_inner_iteration iidx
     end
 
     wed = WordEntryDialog.new @mainpanel
     @inchars = wed.value
-    puts "@inchars: #{@inchars}"
-    
   end
 
   def run_inner_iteration num
-    info "num: #{num}"
     ewr = EqnWordRenderer.new self
 
     starttime = Time.now
-    info "starting: #{starttime.to_f}"
     @key_timer.clear
     
-    info "num: #{num}"
-
     @show = true
 
     @mainpanel.renderer = ewr
@@ -476,8 +898,6 @@ class ArmitageTestRunner
 
     @show = false
     
-    info "pausing: #{Time.new.to_f}"
-
     repaint
 
     endtime = Time.now
@@ -488,8 +908,6 @@ class ArmitageTestRunner
 
     java.lang.Thread.sleep INTERVAL_DURATION
 
-    info "@key_timer: #{@key_timer}"
-
     # get it here, so subsequent calls don't let one "leak" in
     keytime = @key_timer.keytime
     
@@ -497,12 +915,7 @@ class ArmitageTestRunner
 
     response_time = answered ? keytime.to_f - starttime.to_f : -1.0
 
-    info "response_time: #{response_time}"
-    info "answered: #{answered}"
-    info "ewr.correct?: #{ewr.correct?}"
-
-    is_correct = answered == ewr.correct?
-    info "is_correct: #{is_correct}".red
+    is_correct = answered == ewr.is_correct
 
     if !is_correct
       @mainpanel.background_color = ArmitageTestConstants::BACKGROUND_COLOR_FLASH
@@ -516,7 +929,7 @@ class ArmitageTestRunner
       repaint      
     end
 
-    response = [ @user_id, response_time, answered, ewr.correct?, is_correct ]
+    response = [ @user_id, response_time, answered, ewr.is_correct, is_correct ]
 
     puts "response: #{response.inspect}"
     
@@ -673,7 +1086,7 @@ class ArmitageTestFrame < JFrame
     item_about.tool_tip_text = "Show information about the program"    
 
     item_about.add_action_listener do |e|
-      appname = "Armitage Psychological Vigilance Test"
+      appname = "Armitage Psychological Working Memory Test"
       author  = "Jeff Pace (jeugenepace&#64;gmail&#46;com)"
       website = "http://www.incava.org"
       github  = "https://github.com/jeugenepace"
