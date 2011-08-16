@@ -6,6 +6,10 @@ require 'set'
 require 'pathname'
 require 'singleton'
 
+require 'spacebarlistener'
+require 'swingutil'
+require 'csvfile'
+
 include Java
 
 import java.awt.Color
@@ -32,89 +36,17 @@ class Array
   end
 end
 
-module SwingUtil
 
-  def self.included base
-    @@pixels_per_mm = Toolkit.default_toolkit.screen_resolution.to_f / 25.4
-  end
+class ArmitageTestResultsFile < CSVFile
 
-  def mm_to_pixels length_in_mm
-    length_in_mm * @@pixels_per_mm
-  end
-
-end
-
-
-class SpacebarKeyListener 
-  include KeyListener
-
-  attr_reader :keytime
+  FILE_NAME = 'armitage.csv'
+  
+  HEADER_FIELDS = [ "userid", "duration", "answered", "is_correct", "accurate" ]
 
   def initialize
-    @keytime = nil
+    super(FILE_NAME, HEADER_FIELDS)
   end
 
-  def clear
-    @keytime = nil
-  end
-
-  def keyTyped e
-    # ignore all after the first input ...    
-    return if @keytime
-
-    keychar = e.get_key_char
-
-    if keychar == KeyEvent::VK_SPACE
-      @keytime = Time.new
-    end
-  end
-
-  def keyPressed e
-  end
-
-  def keyReleased e
-  end
-
-end
-
-
-class ArmitageTestResultsFile 
-
-  CSV_HEADER_FIELDS = [ "userid", "duration", "answered", "is_correct", "accurate" ]
-
-  CSV_FILE_NAME = 'armitage.csv'
-
-  def self.home_directory
-    home = ENV['HOME']
-    unless home
-      home = (ENV['HOMEDRIVE'] || "") + (ENV['HOMEPATH'] || "")
-    end
-    
-    homedir = ENV['HOME'] || (ENV['HOMEDRIVE'] + ENV['HOMEPATH'])
-    Pathname.new(homedir)
-  end
-
-  def initialize
-    @csv_file = self.class.home_directory + CSV_FILE_NAME
-    
-    @csv_lines = @csv_file.exist? ? CSV.read(@csv_file.to_s) : [ CSV_HEADER_FIELDS ]
-  end
-
-  def addlines lines
-    @csv_lines.concat lines
-  end
-
-  def write
-    @csv_lines.each do |line|
-      puts line
-    end
-
-    CSV.open @csv_file.to_s, 'w' do |csv|
-      @csv_lines.each do |line|
-        csv << line
-      end
-    end
-  end
 end
 
 module ArmitageTestConstants

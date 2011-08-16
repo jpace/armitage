@@ -14,6 +14,8 @@ $mfname     = $metainfdir + "/MANIFEST.MF"
 $jrubyjar   = "/home/jpace/Downloads/jruby-complete-1.6.3.jar"
 $tgtjar     = "armitage.jar"
 
+$rbfiles = %w{ spacebarlistener.rb swingutil.rb csvfile.rb }
+
 def buildfile fname
   File.join($builddir, fname)
 end
@@ -36,9 +38,20 @@ def jrubyctask rbfname, taskname
   end
 end
 
-copytask $fname,  [ $fname ], :rubyfile
 copytask $mfname, [ buildfile($metainfdir), "jar/#{$mfname}" ], :manifest
 copytask $tgtjar, [ $jrubyjar ], :tgtjar
+
+def copygroup files, taskname
+  files.each do |file|
+    tgtfile = buildfile file
+    file tgtfile => file do |t|
+      cp file, tgtfile
+    end
+    task taskname => tgtfile
+  end
+end
+
+copygroup $rbfiles, :rbfiles
 
 jrubyctask $fname, :rbmain
 
@@ -48,8 +61,8 @@ end
 
 copytask $clsname, [ $clsname ], :javaclass
   
-task :buildjrubyjar => [ :manifest, :tgtjar, :rbmain ] do
+task :buildjrubyjar => [ :manifest, :tgtjar, :rbmain, :rbfiles ] do
   Dir.chdir $builddir
 
-  sh "jar ufm #{$tgtjar} #{$mfname} *.class"
+  sh "jar ufm #{$tgtjar} #{$mfname} *.class #{$rbfiles.join(' ')}"
 end
