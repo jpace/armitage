@@ -14,7 +14,15 @@ $mfname     = $metainfdir + "/MANIFEST.MF"
 $jrubyjar   = "/home/jpace/Downloads/jruby-complete-1.6.3.jar"
 $tgtjar     = "armitage.jar"
 
-$rbfiles = %w{ spacebarlistener.rb swingutil.rb csvfile.rb }
+$rbfiles = %w{ 
+  csvfile.rb
+  dialog.rb
+  drawer.rb
+  equation.rb
+  panel.rb
+  spacebarlistener.rb
+  swingutil.rb
+}
 
 def buildfile fname
   File.join($builddir, fname)

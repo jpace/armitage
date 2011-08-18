@@ -6,9 +6,13 @@ require 'set'
 require 'pathname'
 require 'singleton'
 
+require 'csvfile'
+require 'dialog'
+require 'drawer'
+require 'equation'
+require 'panel'
 require 'spacebarlistener'
 require 'swingutil'
-require 'csvfile'
 
 include Java
 
@@ -37,18 +41,6 @@ class Array
 end
 
 
-class ArmitageTestResultsFile < CSVFile
-
-  FILE_NAME = 'armitage.csv'
-  
-  HEADER_FIELDS = [ "userid", "duration", "answered", "is_correct", "accurate" ]
-
-  def initialize
-    super(FILE_NAME, HEADER_FIELDS)
-  end
-
-end
-
 module ArmitageTestConstants
 
   APP_NAME = "Armitage"
@@ -71,78 +63,6 @@ module ArmitageTestConstants
   BACKGROUND_COLOR = Color.new 250, 250, 250
 
   BACKGROUND_COLOR_FLASH = Color.new 250, 0, 0
-end
-
-
-class MainPanel < JPanel
-  include SwingUtil
-
-  attr_accessor :renderer, :background_color
-  
-  def initialize
-    super()
-
-    @renderer = nil
-    @background_color = ArmitageTestConstants::BACKGROUND_COLOR
-  end
-
-  def paintComponent g
-    super
-
-    g.background = @background_color
-
-    rh = RenderingHints.new RenderingHints::KEY_ANTIALIASING, RenderingHints::VALUE_ANTIALIAS_ON
-    
-    rh.put RenderingHints::KEY_RENDERING, RenderingHints::VALUE_RENDER_QUALITY
-    
-    g.rendering_hints = rh
-
-    dim = size
-
-    clear_screen g, dim
-
-    if @renderer
-      @renderer.render g, dim
-    end
-  end
-
-  def clear_screen g, dim
-    g.clear_rect 0, 0, dim.width, dim.height
-  end
-
-end
-
-
-class LineDrawer
-  include SwingUtil
-
-  def draw_centered_line gdimary, y, length_in_mm
-    g   = gdimary[0]
-    dim = gdimary[1]
-  
-    g.color = ArmitageTestConstants::FOREGROUND_COLOR
-    
-    len   = mm_to_pixels length_in_mm
-    ctr_x = dim.width  / 2
-    x     = ctr_x - len / 2
-
-    g.fill_rect x, y, len, ArmitageTestConstants::LINE_THICKNESS
-  end
-
-  def draw_text g, dim, text
-    g.font = java.awt.Font.new "Times New Roman", java.awt.Font::PLAIN, 18
-
-    ctr_x = dim.width / 2
-    ctr_y = dim.height / 2
-
-    x = (ctr_x * 0.80).to_i
-    y = (ctr_y * 0.60).to_i
-    
-    text.each_with_index do |line, idx|
-      g.draw_string line, x, y + (idx * 30)
-    end
-  end
-
 end
 
 
@@ -526,123 +446,26 @@ class ConcreteWordSet
 end
 
 
-class Equation
-  attr_reader :formula, :result
-
-  def initialize(formula, result = nil)
-    @formula = formula.to_s
-    @result  = result || @formula.to_i
-  end
-
-  java_signature 'String toString()'
-  def to_s
-    "#{@formula} => #{@result}"
-  end
-end
-
-class EquationGenerator
-  include Singleton
-  
-  def factors num
-    if num == 1
-      []
-    else
-      sq = Math.sqrt(num).floor
-      possibles = [ 2 ] + (3 ..sq).step(2).collect { |n| n }
-      possibles.each do |n|
-        if num % n == 0
-          return [ n ] + factors(num / n)
-        end
-      end
-      [ num ]
-    end
-  end
-
-  def exec_rand *blocks
-    bidx = rand(blocks.size)
-    blk  = blocks[bidx]
-    blk.call
-  end
-
-  def create_formula(lo, hi)
-    mult_gen = Proc.new do
-      result = rand_bounded(lo, hi)
-      facs   = factors result
-      lhs    = facs.rand
-      rhs    = result / lhs
-      
-      Equation.new "#{lhs} * #{rhs}", lhs * rhs
-    end
-
-    div_gen = Proc.new do
-      lhs  = rand_bounded(lo, hi)
-      facs = factors lhs
-      while facs.size == 1
-        lhs  = rand_bounded(lo, hi)
-        facs = factors lhs
-      end
-
-      rhs = facs.rand
-      Equation.new "#{lhs} / #{rhs}", lhs / rhs
-    end
-
-    exec_rand mult_gen, div_gen
-  end
-
-  def rand_bounded(min, max)
-    min + rand(max - min)
-  end
-
-  def next
-    num_plus_formula = Proc.new do
-      lnum  = rand_bounded(2, 5)
-      rform = create_formula(2, 12)
-      Equation.new "#{lnum} + (#{rform.formula})", lnum + rform.result
-    end
-    
-    num_minus_formula = Proc.new do
-      lnum = rand_bounded(5, 13)
-      rform = create_formula(2, lnum)
-      Equation.new "#{lnum} - (#{rform.formula})", lnum - rform.result
-    end
-
-    formula_plus_num = Proc.new do
-      lform = create_formula(2, 12)
-      rnum = rand_bounded(2, 5)
-      Equation.new "(#{lform.formula}) + #{rnum}", lform.result + rnum
-    end
-    
-    formula_minus_num = Proc.new do
-      lform = create_formula(5, 12)
-      rnum = rand_bounded(1, lform.result + 1)
-      Equation.new "(#{lform.formula}) - #{rnum}", lform.result - rnum
-    end
-    
-    exec_rand num_plus_formula, num_minus_formula, formula_plus_num, formula_minus_num
-  end
-end
-
-
 class EquationSet
   include Singleton
+
+  NUMBER_OF_EQUATIONS = 20
 
   def initialize
     @equations = Hash.new
 
     eg = EquationGenerator.instance
 
-    10.times do
-      eqn = eg.next
-      @equations[eqn] = true
-    end
-
-    10.times do
+    NUMBER_OF_EQUATIONS.times do
+      goodeqn = eg.next
+      @equations[goodeqn] = true
+      
       eqn = eg.next
       badeqn = Equation.new eqn.formula, eqn.result + (rand(2) == 0 ? 1 : -1) * (1 + rand(3))
       @equations[badeqn] = false
     end
   end
-
+  
   def is_correct eqn
     @equations[eqn]
   end
@@ -653,12 +476,23 @@ class EquationSet
 end
 
 
-class EqnWordRenderer < LineDrawer
+class ArmitageLineDrawer < LineDrawer
+  include ArmitageTestConstants
+
+  def initialize
+    super(FOREGROUND_COLOR, LINE_THICKNESS)
+  end
+end
+
+
+class EqnWordRenderer < ArmitageLineDrawer
   include ArmitageTestConstants
 
   attr_accessor :length_in_mm
 
   def initialize test
+    super()
+    
     @test = test
 
     @current_word = ConcreteWordSet.instance.get_random
@@ -680,9 +514,20 @@ class EqnWordRenderer < LineDrawer
 end
 
 
-class IntroRenderer < LineDrawer
+class TextRenderer < ArmitageLineDrawer
 
-  def initialize test
+  def render g, dim
+    draw_text g, dim, text
+  end
+
+end
+
+
+class IntroRenderer < TextRenderer
+
+  attr_reader :text
+  
+  def initialize
     @text = Array.new
     
     @text << "For each of the following screens,"
@@ -691,60 +536,28 @@ class IntroRenderer < LineDrawer
     @text << "For example:"
     @text << "window"
     @text << "8 + (2 - 1) = 9"
-  end
 
-  def render g, dim
-    draw_text g, dim, @text
+    super()
   end
 
 end
 
 
-class OutroRenderer < LineDrawer
+class OutroRenderer < ArmitageLineDrawer
 
-  def initialize test
+  attr_reader :text  
+
+  def initialize
     @text = Array.new
     
     @text << "End of test."
     @text << ""
-  end
 
-  def render g, dim
-    draw_text g, dim, @text
+    super()
   end
 
 end
 
-
-class InputDialog
-
-  def initialize parent, message, title
-    # from javax.swing.JOptionPane
-    
-    @pane = JOptionPane.new(message, JOptionPane::PLAIN_MESSAGE, JOptionPane::OK_CANCEL_OPTION)
-
-    @pane.wants_input = true
-    @pane.selection_values = nil
-    @pane.initial_selection_value = nil
-    @pane.component_orientation = parent.component_orientation
-
-    @dialog = @pane.create_dialog(parent, title, javax.swing.JRootPane::PLAIN_DIALOG)
-                               
-    @pane.select_initial_value
-  end
-
-  def show
-    @dialog.show
-  end
-
-  def dispose
-    @dialog.dispose
-  end
-
-  def value
-    @pane.input_value
-  end
-end
 
 class WordEntryDialog
   include ArmitageTestConstants
@@ -905,8 +718,11 @@ class ArmitageTest < ArmitageTestRunner
   end
 
   def write_responses
-    resfile = ArmitageTestResultsFile.new
+    file_name = 'armitage.csv'
+    header_fields = [ "userid", "duration", "answered", "is_correct", "accurate" ]
 
+    resfile = CSVFile.new(file_name, header_fields)
+    
     resfile.addlines @responses
 
     resfile.write
@@ -938,7 +754,7 @@ class ArmitageTestIntro
   end
 
   def run
-    @mainpanel.renderer = IntroRenderer.new self
+    @mainpanel.renderer = IntroRenderer.new
     @mainpanel.repaint
 
     java.lang.Thread.sleep ArmitageTestConstants::INTRO_DURATION
@@ -1047,7 +863,7 @@ class ArmitageTestFrame < JFrame
     set_location_relative_to nil
     get_content_pane.layout = java.awt.BorderLayout.new
 
-    @panel = MainPanel.new
+    @panel = MainPanel.new(ArmitageTestConstants::BACKGROUND_COLOR)
 
     get_content_pane.add @panel, java.awt.BorderLayout::CENTER
 
