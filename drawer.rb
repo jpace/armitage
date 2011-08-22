@@ -28,7 +28,8 @@ class LineDrawer
   end
 
   def draw_text g, dim, text
-    g.font = java.awt.Font.new "Times New Roman", java.awt.Font::PLAIN, 18
+    font_size = 24
+    g.font = java.awt.Font.new "Times New Roman", java.awt.Font::PLAIN, font_size
 
     ctr_x = dim.width / 2
     ctr_y = dim.height / 2
@@ -37,7 +38,7 @@ class LineDrawer
     y = (ctr_y * 0.60).to_i
     
     text.each_with_index do |line, idx|
-      g.draw_string line, x, y + (idx * 30)
+      g.draw_string line, x, y + (idx * 1.5 * font_size)
     end
   end
 

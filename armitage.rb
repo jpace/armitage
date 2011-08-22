@@ -58,7 +58,7 @@ module ArmitageTestConstants
   OUTER_ITERATIONS_PER_TEST = [22, 4][$param_num]
   INNER_ITERATIONS_PER_TEST = [6, 4][$param_num]
 
-  INPUT_DURATION = [21000, 4000][$param_num] # ms
+  INPUT_DURATION = [21000, 8000][$param_num] # ms
   
   BACKGROUND_COLOR = Color.new 250, 250, 250
 
@@ -488,7 +488,7 @@ end
 class EqnWordRenderer < ArmitageLineDrawer
   include ArmitageTestConstants
 
-  attr_accessor :length_in_mm
+  attr_accessor :length_in_mm, :current_word
 
   def initialize test
     super()
@@ -543,7 +543,7 @@ class IntroRenderer < TextRenderer
 end
 
 
-class OutroRenderer < ArmitageLineDrawer
+class OutroRenderer < TextRenderer
 
   attr_reader :text  
 
@@ -564,13 +564,11 @@ class WordEntryDialog
 
   attr_reader :value
 
-  def initialize panel
+  def initialize panel, first_char
     @indlg = nil
     @value = nil
 
     java.lang.Thread.new(self).start
-
-    first_char = rand(2) == 0
 
     @indlg = InputDialog.new panel, "Enter the " + (first_char ? "first" : "last") + " character of each word:", "Query"
     @indlg.show
@@ -610,7 +608,9 @@ class ArmitageTestRunner
 
     @show = true
 
-    @responses = Array.new
+    @eqn_responses = Array.new
+
+    @word_responses = Array.new
 
     java.lang.Thread.new(self).start
   end
@@ -620,16 +620,33 @@ class ArmitageTestRunner
   end
 
   def run_outer_iteration num
-    @inner_iterations.times do |iidx|
-      run_inner_iteration iidx
-    end
+    @first_char  = rand(2) == 0
+    puts "@first_char: #{@first_char}"
+    @shown_chars = ""
 
-    wed = WordEntryDialog.new @mainpanel
+    if false
+      @inner_iterations.times do |iidx|
+        run_inner_iteration iidx
+      end
+    end
+      
+    wed = WordEntryDialog.new @mainpanel, @first_char
     @inchars = wed.value
+
+    puts "@inchars: #{@inchars}"
+    puts "@shown_chars: #{@shown_chars}"
+
+    word_response = [ @user_id, @shown_chars, @inchars, @shown_chars == @inchars ]
+
+    @word_responses << word_response
   end
 
   def run_inner_iteration num
     ewr = EqnWordRenderer.new self
+
+    char_idx = @first_char ? 0 : -1
+
+    @shown_chars << ewr.current_word[char_idx].chr
 
     starttime = Time.now
     @key_timer.clear
@@ -658,7 +675,7 @@ class ArmitageTestRunner
     
     answered = !keytime.nil?
 
-    response_time = answered ? keytime.to_f - starttime.to_f : -1.0
+    eqn_response_time = answered ? keytime.to_f - starttime.to_f : -1.0
 
     is_correct = answered == ewr.is_correct
 
@@ -674,11 +691,11 @@ class ArmitageTestRunner
       repaint      
     end
 
-    response = [ @user_id, response_time, answered, ewr.is_correct, is_correct ]
+    eqn_response = [ @user_id, eqn_response_time, answered, ewr.is_correct, is_correct ]
 
-    puts "response: #{response.inspect}"
+    puts "eqn_response: #{eqn_response.inspect}"
     
-    @responses << response
+    @eqn_responses << eqn_response
 
     # puts "done: #{Time.new.to_f}"
   end
@@ -694,7 +711,7 @@ class ArmitageTestRunner
   end
 
   def show_outro
-    @mainpanel.renderer = OutroRenderer.new self
+    @mainpanel.renderer = OutroRenderer.new
 
     repaint
   end
@@ -717,15 +734,28 @@ class ArmitageTest < ArmitageTestRunner
     super(mainpanel, ArmitageTestConstants::OUTER_ITERATIONS_PER_TEST, ArmitageTestConstants::INNER_ITERATIONS_PER_TEST)
   end
 
-  def write_responses
-    file_name = 'armitage.csv'
+  def write_response_file fname, header_fields, responses
+    resfile = CSVFile.new(fname, header_fields)
+    
+    resfile.addlines responses
+    resfile.write
+  end
+
+  def write_eqn_responses
     header_fields = [ "userid", "duration", "answered", "is_correct", "accurate" ]
 
-    resfile = CSVFile.new(file_name, header_fields)
-    
-    resfile.addlines @responses
+    write_response_file 'armitage_eqns.csv', header_fields, @eqn_responses
+  end
 
-    resfile.write
+  def write_word_responses
+    header_fields = [ "userid", "actual", "response", "is_correct" ]
+    
+    write_response_file 'armitage_words.csv', header_fields, @word_responses
+  end
+
+  def write_responses
+    write_eqn_responses
+    write_word_responses
   end
 
   def run
