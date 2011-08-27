@@ -28,8 +28,10 @@ class CSVFile
   end
 
   def write
-    @csv_lines.each do |line|
-      puts line
+    if false
+      @csv_lines.each do |line|
+        puts line
+      end
     end
 
     CSV.open @csv_file.to_s, 'w' do |csv|
