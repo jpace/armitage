@@ -1,6 +1,8 @@
 require 'rubygems'
 require 'fileutils'
 
+require 'lib/tasks/common'
+
 task :default => :buildjrubyjar
 
 $fname    = "armitage.rb"
@@ -16,49 +18,19 @@ $tgtjar     = "armitage.jar"
 
 $rbfiles = %w{ 
   csvfile.rb
-  dialog.rb
   drawer.rb
-  equation.rb
   panel.rb
   spacebarlistener.rb
   swingutil.rb
   testframe.rb
 }
 
-def buildfile fname
-  File.join($builddir, fname)
-end
-
 directory $builddir
 
 directory buildfile($metainfdir)
 
-def copytask fname, deps, taskname
-  tgtfile = buildfile(fname)
-  file tgtfile => deps do |t|
-    cp t.prerequisites.last, t.name
-  end
-  task taskname => tgtfile
-end
-
-def jrubyctask rbfname, taskname
-  task taskname do |t|
-    sh "jrubyc -t #{$builddir} --javac #{rbfname}"
-  end
-end
-
 copytask $mfname, [ buildfile($metainfdir), "jar/#{$mfname}" ], :manifest
 copytask $tgtjar, [ $jrubyjar ], :tgtjar
-
-def copygroup files, taskname
-  files.each do |file|
-    tgtfile = buildfile file
-    file tgtfile => file do |t|
-      cp file, tgtfile
-    end
-    task taskname => tgtfile
-  end
-end
 
 copygroup $rbfiles, :rbfiles
 
