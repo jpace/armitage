@@ -536,6 +536,9 @@ class IntroRenderer < TextRenderer
     @text << "For example:"
     @text << "window"
     @text << "8 + (2 - 1) = 9"
+    @text << ""
+    @text << "A word will be displayed above the equation, and that"
+    @text << "word should be remembered for later."
 
     super()
   end
