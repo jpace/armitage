@@ -30,7 +30,7 @@ import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.JPanel
 
-$testing = true
+$testing = false
 $param_num = $testing ? 1 : 0   # 0 == actual; 1 == testing
 
 class Array
